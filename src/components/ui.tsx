@@ -1,0 +1,15 @@
+import React, { PropsWithChildren } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Theme, useTheme } from '@/theme';
+
+export function Screen({children,scroll=true}:PropsWithChildren<{scroll?:boolean}>){const t=useTheme();const insets=useSafeAreaInsets();const style=[styles.screen,{backgroundColor:t.background,paddingTop:insets.top+10}];return scroll?<ScrollView style={style} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">{children}</ScrollView>:<View style={[style,styles.content]}>{children}</View>}
+export function H1({children}:PropsWithChildren){const t=useTheme();return <Text accessibilityRole="header" style={[styles.h1,{color:t.ink}]}>{children}</Text>}
+export function H2({children}:PropsWithChildren){const t=useTheme();return <Text accessibilityRole="header" style={[styles.h2,{color:t.ink}]}>{children}</Text>}
+export function Body({children,muted=false}:PropsWithChildren<{muted?:boolean}>){const t=useTheme();return <Text style={[styles.body,{color:muted?t.muted:t.ink}]}>{children}</Text>}
+export function Card({children,style}:PropsWithChildren<{style?:ViewStyle}>){const t=useTheme();return <View style={[styles.card,{backgroundColor:t.surface,borderColor:t.line},style]}>{children}</View>}
+export function Pill({children,tone='soft'}:PropsWithChildren<{tone?:'soft'|'accent'|'good'}>){const t=useTheme();const color=tone==='accent'?t.accent:tone==='good'?t.good:t.primary;return <View style={[styles.pill,{backgroundColor:`${color}20`}]}><Text style={[styles.pillText,{color}]}>{children}</Text></View>}
+export function Button({title,onPress,secondary=false,disabled=false}: {title:string;onPress:()=>void;secondary?:boolean;disabled?:boolean}){const t=useTheme();return <Pressable accessibilityRole="button" accessibilityState={{disabled}} disabled={disabled} onPress={onPress} style={({pressed})=>[styles.button,{backgroundColor:secondary?t.primarySoft:t.primary,opacity:disabled?0.5:pressed?0.8:1}]}><Text style={[styles.buttonText,{color:secondary?t.primary:'#fff'}]}>{title}</Text></Pressable>}
+export function Loading(){const t=useTheme();return <View style={styles.center}><ActivityIndicator color={t.primary}/></View>}
+export function Divider(){const t=useTheme();return <View style={[styles.divider,{backgroundColor:t.line}]}/>}
+export const styles=StyleSheet.create({screen:{flex:1},content:{padding:20,paddingBottom:48,gap:14},h1:{fontSize:31,lineHeight:37,fontWeight:'800',letterSpacing:-0.7},h2:{fontSize:21,lineHeight:27,fontWeight:'700'},body:{fontSize:16,lineHeight:23},card:{borderWidth:1,borderRadius:20,padding:17,gap:9},pill:{alignSelf:'flex-start',borderRadius:999,paddingVertical:5,paddingHorizontal:10},pillText:{fontSize:12,fontWeight:'800',textTransform:'uppercase',letterSpacing:.5},button:{minHeight:52,borderRadius:16,alignItems:'center',justifyContent:'center',paddingHorizontal:18},buttonText:{fontSize:16,fontWeight:'800'},center:{flex:1,alignItems:'center',justifyContent:'center'},divider:{height:1,width:'100%',marginVertical:4}});

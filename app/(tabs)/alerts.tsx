@@ -1,0 +1,6 @@
+import { StyleSheet, Text, View } from 'react-native';
+import { Card, H1, H2, Pill, Screen } from '@/components/ui';
+import { useAppStore } from '@/store/useAppStore';
+import { useTheme } from '@/theme';
+export default function Alerts(){const t=useTheme();const cases=useAppStore(s=>s.cases);const events=cases.flatMap(c=>c.events.map(e=>({...e,nickname:c.nickname}))).sort((a,b)=>b.occurredAt.localeCompare(a.occurredAt));return <Screen><H1>Alerts</H1><Text style={[s.copy,{color:t.muted}]}>Case changes stay separate from news and bulletin updates, so important alerts are easy to recognize.</Text>{events.length===0?<Card><H2>No case alerts yet</H2><Text style={[s.copy,{color:t.muted}]}>Add a case to begin building its update history.</Text></Card>:events.slice(0,20).map((e,i)=><Card key={`${e.id}-${i}`}><View style={s.row}><Pill tone={i===0?'accent':'soft'}>{i===0?'Latest':'History'}</Pill><Text style={[s.date,{color:t.muted}]}>{new Date(e.occurredAt).toLocaleDateString()}</Text></View><H2>{e.nickname}</H2><Text style={[s.copy,{color:t.ink}]}>{e.status}</Text></Card>)}</Screen>}
+const s=StyleSheet.create({copy:{fontSize:16,lineHeight:23},row:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},date:{fontSize:13}});
