@@ -84,7 +84,7 @@ npm test
 Migration `004_uscis_qualification.sql` creates the protected evidence table and a Vault-backed Cron invoker. Migration `005_schedule_uscis_qualification.sql` provides four daily retry windows to tolerate temporary sandbox outages. Once a UTC date is complete, later invocations exit without additional USCIS traffic. Verify five consecutive complete dates without reading case data:
 
 ```sql
-select run_date, outcome, request_count, success_http_status, error_http_status,
+select run_date, outcome, oauth_succeeded, request_count, success_http_status, error_http_status,
        success_duration_ms, error_duration_ms, started_at, finished_at
 from public.uscis_qualification_runs
 order by run_date;

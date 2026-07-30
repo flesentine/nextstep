@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { fetchUscisStatus, OfficialApiError } from '../_shared/uscisClient.ts';
+import { fetchUscisStatus, OfficialApiError, uscisAccessToken } from '../_shared/uscisClient.ts';
 
 const FUNCTION_VERSION='1';
 const SUCCESS_STAGING_RECEIPT='EAC9999103403';
@@ -45,6 +45,7 @@ Deno.serve(async req=>{
     success_http_status?:number;
     success_duration_ms?:number;
     success_has_history?:boolean;
+    oauth_succeeded?:boolean;
     error_http_status?:number;
     error_duration_ms?:number;
     error_category?:string;
@@ -62,6 +63,8 @@ Deno.serve(async req=>{
       evidence.request_count++;
     };
 
+    await uscisAccessToken();
+    evidence.oauth_succeeded=true;
     await reserve();
     const successStarted=performance.now();
     const success=await fetchUscisStatus(SUCCESS_STAGING_RECEIPT);
