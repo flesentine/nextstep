@@ -36,6 +36,7 @@ Without `EXPO_PUBLIC_API_BASE_URL`, USCIS additions use a safe local placeholder
 - Use `https://api-int.uscis.gov/oauth/accesstoken` and `https://api-int.uscis.gov/case-status` for sandbox. The function caches each OAuth token until shortly before its documented 30-minute expiry.
 - Deploy `case-api` with JWT verification enabled for account traffic. For staging-receipt guest testing only, deploy a separate sandbox instance with JWT verification disabled and `ALLOW_GUEST_SANDBOX=true`; never carry that setting into production.
 - Complete the required USCIS sandbox traffic period before requesting production access.
+- The `uscis-qualification` function records one redacted sandbox evidence row per UTC day. It exercises a known 200 staging response and a controlled official 4xx response, stores no identifiers or response bodies, and refuses to run against production URLs.
 - Replace the placeholder EAS project ID and configure Apple/Google credentials.
 - Configure `nextstep_plus_monthly` at `$2.99/month` and `nextstep_plus_annual` at `$24.99/year` with a seven-day annual trial; validate store receipts server-side before unlocking premium features.
 - Professionally review and translate every guidance card. This repository provides educational product copy, not legal advice.
@@ -77,3 +78,16 @@ Without `EXPO_PUBLIC_API_BASE_URL`, USCIS additions use a safe local placeholder
 npm run typecheck
 npm test
 ```
+
+### USCIS sandbox qualification evidence
+
+Migration `004_uscis_qualification.sql` creates the protected evidence table and a Vault-backed Cron invoker. Migration `005_schedule_uscis_qualification.sql` provides four daily retry windows to tolerate temporary sandbox outages. Once a UTC date is complete, later invocations exit without additional USCIS traffic. Verify five consecutive complete dates without reading case data:
+
+```sql
+select run_date, outcome, request_count, success_http_status, error_http_status,
+       success_duration_ms, error_duration_ms, started_at, finished_at
+from public.uscis_qualification_runs
+order by run_date;
+```
+
+Only dates with `outcome = 'complete'`, a 2xx success, and an official 4xx response count toward the evidence package. Keep the job sandbox-only until the production-access request is submitted.
