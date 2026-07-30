@@ -12,9 +12,20 @@ const required=(name:string)=>{const value=Deno.env.get(name);if(!value)throw ne
 
 async function requestToken(){
   const response=await fetch(required('USCIS_TOKEN_URL'),{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'client_credentials',client_id:required('USCIS_CLIENT_ID'),client_secret:required('USCIS_CLIENT_SECRET')})});
-  if(!response.ok)throw new OfficialApiError(503,'USCIS authorization is temporarily unavailable.');
+  if(!response.ok){
+    const rejected=response.status===400||response.status===401||response.status===403;
+    throw new OfficialApiError(
+      response.status,
+      rejected?'USCIS rejected the configured sandbox client credentials.':'USCIS authorization is temporarily unavailable.',
+      rejected?'oauth_credentials_rejected':'oauth_unavailable'
+    );
+  }
   const data=await response.json();
-  if(!data.access_token)throw new OfficialApiError(503,'USCIS authorization is temporarily unavailable.');
+  if(!data.access_token)throw new OfficialApiError(
+    401,
+    'USCIS did not issue an access token for the configured sandbox credentials.',
+    'oauth_access_token_missing'
+  );
   tokenCache={value:String(data.access_token),expiresAt:Date.now()+Number(data.expires_in??1799)*1000};
   return tokenCache.value;
 }

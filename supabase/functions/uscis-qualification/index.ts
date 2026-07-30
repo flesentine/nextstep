@@ -97,9 +97,12 @@ Deno.serve(async req=>{
     return json({runDate,outcome:complete?'complete':'partial',requestCount:evidence.request_count});
   }catch(error){
     const finishedAt=new Date().toISOString();
+    const safeFailure=error instanceof OfficialApiError
+      ? `Qualification stopped before case evidence: official HTTP ${error.status} (${safeOperationalText(error.category||'uncategorized')}).`
+      : safeOperationalText(error instanceof Error?error.message:'Qualification run failed safely.');
     await db.from('uscis_qualification_runs').update({
       ...evidence,outcome:evidence.success_http_status?'partial':'failed',finished_at:finishedAt,updated_at:finishedAt,
-      recovery_note:safeOperationalText(error instanceof Error?error.message:'Qualification run failed safely.')
+      recovery_note:safeFailure
     }).eq('run_date',runDate);
     return json({runDate,outcome:'failed',error:'Qualification run failed safely. Check protected operational evidence.'},502);
   }
