@@ -41,12 +41,11 @@ export function eventDurationDays(from:CaseEvent,to:CaseEvent){return Math.max(0
 
 export function safeObservationShape(value:CohortObservation){
   return {
-    formType:value.formType,
-    filingMonth:value.filingMonth,
-    receiptPrefix:value.receiptPrefix,
+    formType:value.formType.toUpperCase().trim(),
+    filingMonth:`${value.filingMonth.slice(0,7)}-01`,
     milestone:value.milestone,
-    durationDays:value.durationDays,
+    durationDays:Math.max(0,Math.round(value.durationDays)),
     outcome:value.outcome,
-    movedMonth:value.movedAt.slice(0,7)
+    movedMonth:`${value.movedAt.slice(0,7)}-01`
   };
 }

@@ -19,7 +19,7 @@ export default function Cohorts(){
   const official=publicFormMetrics.filter(x=>x.formType===formType);
   return <Screen>
     <Pressable accessibilityRole="button" onPress={()=>router.back()}><Text style={[s.back,{color:t.primary}]}>‹ Tools</Text></Pressable>
-    <Pill tone="accent">NextStep Plus preview</Pill><H1>Cases Like Mine</H1>
+    <Pill tone="accent">Free during launch</Pill><H1>Cases Like Mine</H1>
     <Text style={[s.copy,{color:t.muted}]}>Explore broad public progress and privacy-safe cohorts. No receipt numbers or individual cases are exposed.</Text>
     <H2>Form type</H2>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips}>{forms.map(form=><Chip key={form} label={form} active={form===formType} onPress={()=>setFormType(form)}/>)}</ScrollView>

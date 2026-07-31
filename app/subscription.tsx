@@ -1,7 +1,49 @@
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Button, Card, H1, H2, Pill, Screen } from '@/components/ui';
 import { useTheme } from '@/theme';
-const features=['Unlimited tracked cases','Transparent processing ranges','Share with up to five trusted people','Advanced reminders and expanded checklists'];
-export default function Subscription(){const t=useTheme();return <Screen><Text onPress={()=>router.back()} style={[s.close,{color:t.primary}]}>Close</Text><Pill tone="accent">7 days free on annual</Pill><H1>More clarity for the whole household.</H1><Card>{features.map(x=><View key={x} style={s.row}><Text style={[s.tick,{color:t.good}]}>✓</Text><Text style={[s.copy,{color:t.ink}]}>{x}</Text></View>)}</Card><View style={s.prices}><Card style={s.price}><H2>$2.99</H2><Text style={{color:t.muted}}>monthly</Text></Card><Card style={s.price}><Pill>Best value</Pill><H2>$24.99</H2><Text style={{color:t.muted}}>annually</Text></Card></View><Button title="Start 7-day annual trial" onPress={()=>Alert.alert('Store products not active','Create nextstep_plus_monthly and nextstep_plus_annual in App Store Connect and Play Console, then connect server-side receipt verification before enabling this button.')}/><Button title="Restore purchases" secondary onPress={()=>Alert.alert('Store products not active','Purchase restoration becomes available with the verified store entitlement adapter.')}/><Text style={[s.note,{color:t.muted}]}>The annual plan renews for $24.99 after the trial unless canceled at least 24 hours before renewal. No advertisements. Manage or cancel in your store account. Observed ranges are not government timelines.</Text></Screen>}
-const s=StyleSheet.create({close:{fontSize:16,fontWeight:'800'},row:{flexDirection:'row',gap:10},tick:{fontSize:18,fontWeight:'900'},copy:{fontSize:16,lineHeight:23,flex:1},prices:{flexDirection:'row',gap:10},price:{flex:1},note:{fontSize:12,lineHeight:18,textAlign:'center'}});
+
+const features = [
+  'Track as many cases as you need',
+  'View transparent public progress',
+  'Explore privacy-thresholded cohorts',
+  'Use reminders and educational guidance'
+];
+
+export default function Subscription() {
+  const t = useTheme();
+  return (
+    <Screen>
+      <Text accessibilityRole="button" onPress={() => router.back()} style={[s.close, { color: t.primary }]}>
+        Close
+      </Text>
+      <Pill tone="good">Free launch</Pill>
+      <H1>NextStep is free while we build with the community.</H1>
+      <Text style={[s.copy, { color: t.muted }]}>
+        There are no subscriptions, advertisements, trials, or purchase requirements in this release.
+      </Text>
+      <Card>
+        <H2>Included now</H2>
+        {features.map(feature => (
+          <View key={feature} style={s.row}>
+            <Text style={[s.tick, { color: t.good }]}>✓</Text>
+            <Text style={[s.copy, { color: t.ink }]}>{feature}</Text>
+          </View>
+        ))}
+      </Card>
+      <Button title="Continue using NextStep" onPress={() => router.replace('/(tabs)')} />
+      <Text style={[s.note, { color: t.muted }]}>
+        If optional paid features are introduced later, their price and benefits will be shown before purchase.
+        Core case tracking will remain available without advertising.
+      </Text>
+    </Screen>
+  );
+}
+
+const s = StyleSheet.create({
+  close: { fontSize: 16, fontWeight: '800' },
+  row: { flexDirection: 'row', gap: 10 },
+  tick: { fontSize: 18, fontWeight: '900' },
+  copy: { fontSize: 16, lineHeight: 23, flex: 1 },
+  note: { fontSize: 12, lineHeight: 18, textAlign: 'center' }
+});

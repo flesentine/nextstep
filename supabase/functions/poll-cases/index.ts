@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { decryptIdentifier } from '../_shared/caseCrypto.ts';
 import { fetchUscisStatus, OfficialApiError } from '../_shared/uscisClient.ts';
+import { syncResearchObservations } from '../_shared/research.ts';
 
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json'}});
 const required=(name:string)=>{const value=Deno.env.get(name);if(!value)throw new Error(`Missing ${name}`);return value;};
@@ -56,6 +57,7 @@ Deno.serve(async req=>{
         quiet_since:quietSince,poll_failures:0,
         source_snapshot:{source:'uscis',fetchedAt:now.toISOString(),officialUrl:'https://egov.uscis.gov/',freshnessMinutes:0}
       }).eq('id',row.id);
+      await syncResearchObservations(db,row.id).catch(()=>console.error('Research observation sync failed.'));
 
       if(insertedEvent){
         const householdKey=row.household_id??row.owner_id;

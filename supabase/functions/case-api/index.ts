@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { decryptIdentifier, encryptIdentifier, fingerprintIdentifier } from '../_shared/caseCrypto.ts';
 import { fetchUscisStatus, OfficialApiError } from '../_shared/uscisClient.ts';
+import { removeResearchObservations, syncResearchObservations } from '../_shared/research.ts';
 
 const cors={'access-control-allow-origin':'*','access-control-allow-headers':'authorization, apikey, content-type','access-control-allow-methods':'GET, POST, OPTIONS'};
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,'content-type':'application/json'}});
@@ -72,6 +73,39 @@ Deno.serve(async req=>{
 
     if(!user)return json({error:'Unauthorized'},401);
 
+    if(path==='/v1/research-consent'){
+      if(req.method==='GET'){
+        const {data,error}=await db.from('research_consent').select('enabled,consent_version,consented_at,withdrawn_at,updated_at').eq('user_id',user.id).maybeSingle();
+        if(error)throw error;
+        return json({enabled:Boolean(data?.enabled),consentVersion:data?.consent_version??1,consentedAt:data?.consented_at??null,withdrawnAt:data?.withdrawn_at??null});
+      }
+      if(req.method==='POST'){
+        const body=await req.json();
+        if(typeof body.enabled!=='boolean')return json({error:'enabled must be true or false.'},422);
+        if(body.enabled&&(!Deno.env.get('RESEARCH_HASH_SECRET')||Deno.env.get('RESEARCH_HASH_SECRET')!.length<32)){
+          return json({error:'Anonymous research contribution is not configured yet.'},503);
+        }
+        const now=new Date().toISOString();
+        const {error:consentError}=await db.from('research_consent').upsert({
+          user_id:user.id,enabled:body.enabled,consent_version:1,
+          consented_at:body.enabled?now:null,withdrawn_at:body.enabled?null:now,updated_at:now
+        },{onConflict:'user_id'});
+        if(consentError)throw consentError;
+        const {error:profileError}=await db.from('profiles').update({analytics_opt_in:body.enabled}).eq('id',user.id);
+        if(profileError)throw profileError;
+        const {data:userCases,error:casesError}=await db.from('cases').select('id').eq('owner_id',user.id);
+        if(casesError)throw casesError;
+        let observations=0;
+        for(const item of userCases??[]){
+          if(body.enabled)observations+=(await syncResearchObservations(db,item.id)).recorded;
+          else observations+=await removeResearchObservations(db,item.id);
+        }
+        await db.rpc('publish_research_cohorts',{p_minimum_size:50,p_release_version:'community-v1'});
+        return json({enabled:body.enabled,casesProcessed:userCases?.length??0,observations});
+      }
+      return json({error:'Method not allowed'},405);
+    }
+
     if(req.method==='POST'&&path==='/v1/cases'){
       const body=await req.json();
       const source=String(body.source??'uscis');
@@ -92,6 +126,7 @@ Deno.serve(async req=>{
       if(error?.code==='23505')return json({error:'This case is already tracked.'},409);
       if(error)throw error;
       await insertEvents(db,data.id,official.rawEvents);
+      await syncResearchObservations(db,data.id).catch(()=>console.error('Research observation sync failed.'));
       const events=(await db.from('case_events').select('id,status,description,milestone,occurred_at,source_hash').eq('case_id',data.id).order('occurred_at',{ascending:false})).data??[];
       return json(publicCase(data,events),201);
     }
@@ -118,6 +153,7 @@ Deno.serve(async req=>{
           source_snapshot:{source:'uscis',fetchedAt:now,officialUrl:'https://egov.uscis.gov/',freshnessMinutes:0}
         }).eq('id',caseId).select('*').single();
         if(updateError)throw updateError;
+        await syncResearchObservations(db,caseId).catch(()=>console.error('Research observation sync failed.'));
         const events=(await db.from('case_events').select('id,status,description,milestone,occurred_at,source_hash').eq('case_id',caseId).order('occurred_at',{ascending:false})).data??[];
         return json(publicCase(updated,events));
       }

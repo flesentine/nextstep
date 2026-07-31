@@ -88,7 +88,7 @@ export default function CaseDetail(){
     </Card>
 
     {record.estimate&&<Card>
-      <View style={s.top}><H2>Observed range</H2><Pill tone="accent">Plus</Pill></View>
+      <View style={s.top}><H2>Observed range</H2><Pill tone="accent">Free during launch</Pill></View>
       <Text style={[s.range,{color:t.ink}]}>{new Date(record.estimate.earliest).toLocaleDateString()} – {new Date(record.estimate.latest).toLocaleDateString()}</Text>
       <Text style={[s.meta,{color:t.muted}]}>p{record.estimate.percentileLow??25}–p{record.estimate.percentileHigh??75} · {record.estimate.cohortLabel??'similar public observations'} · n={record.estimate.sampleSize.toLocaleString()} · source {record.estimate.sourceDate} · confidence {record.estimate.confidence}. This is not a government estimate or promised decision date.</Text>
     </Card>}

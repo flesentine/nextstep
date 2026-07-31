@@ -5,6 +5,7 @@ import { decisionApprovalShare, progressInterpretation, publicFormMetrics, workl
 import { normalizeUscisPayload } from '../../supabase/functions/_shared/uscisPayload';
 import { buildCohortInsight, MIN_PUBLIC_COHORT, safeObservationShape } from '../data/cohorts';
 import { apiErrorFromResponse } from '../services/apiErrors';
+import { hasPlusAccess, trackedCaseLimit } from '../services/billing';
 
 describe('case identifiers',()=>{
   it('normalizes and validates supported USCIS receipt numbers',()=>{expect(normalizeReceipt('ioe-0912345678')).toBe('IOE0912345678');expect(validateIdentifier('uscis','IOE0912345678')).toBe(true);expect(validateIdentifier('uscis','ABC0912345678')).toBe(false);});
@@ -43,8 +44,30 @@ describe('privacy-safe cohorts',()=>{
   const make=(count:number)=>Array.from({length:count},(_,index)=>({formType:'I-485',filingMonth:'2026-01-01',receiptPrefix:'IOE',milestone:'decision',durationDays:index+1,outcome:index%5===0?'denied' as const:'approved' as const,movedAt:'2026-07-15'}));
   it('suppresses groups below fifty observations',()=>expect(buildCohortInsight('small',make(MIN_PUBLIC_COHORT-1),'2026-07-29')).toBeNull());
   it('publishes percentile ranges only after the threshold',()=>{const insight=buildCohortInsight('ready',make(100),'2026-07-29');expect(insight?.sampleSize).toBe(100);expect(insight?.p25Days).toBe(26);expect(insight?.medianDays).toBe(51);expect(insight?.p75Days).toBe(75);});
-  it('removes exact movement dates and identifiers from aggregate input',()=>{const safe=safeObservationShape(make(1)[0]);expect(safe.movedMonth).toBe('2026-07');expect(safe).not.toHaveProperty('ownerId');expect(safe).not.toHaveProperty('caseId');expect(safe).not.toHaveProperty('receiptNumber');});
+  it('removes exact dates and every case-linking identifier from aggregate input',()=>{
+    const safe=safeObservationShape({...make(1)[0],filingMonth:'2026-01-19',movedAt:'2026-07-15T18:22:31.000Z'});
+    expect(safe.filingMonth).toBe('2026-01-01');
+    expect(safe.movedMonth).toBe('2026-07-01');
+    expect(safe).not.toHaveProperty('ownerId');
+    expect(safe).not.toHaveProperty('userId');
+    expect(safe).not.toHaveProperty('caseId');
+    expect(safe).not.toHaveProperty('receiptNumber');
+    expect(safe).not.toHaveProperty('receiptPrefix');
+    expect(safe).not.toHaveProperty('status');
+    expect(safe).not.toHaveProperty('description');
+  });
 });
 describe('safe API errors',()=>{
   it('shows the government-safe message without requiring response bodies in logs',async()=>{const error=await apiErrorFromResponse(new Response(JSON.stringify({error:'USCIS did not accept this receipt-number format.',details:{traceId:'trace-safe'}}),{status:422}));expect(error.message).toContain('did not accept');expect((error as Error&{traceId?:string}).traceId).toBe('trace-safe');});
+});
+describe('free launch billing boundary',()=>{
+  it('unlocks currently available features and unlimited cases while purchases are disabled',()=>{
+    const free={tier:'free' as const};
+    expect(hasPlusAccess(free,false)).toBe(true);
+    expect(trackedCaseLimit(free,false)).toBe(Number.POSITIVE_INFINITY);
+  });
+  it('restores the planned five-case free limit only when purchases are enabled',()=>{
+    expect(trackedCaseLimit({tier:'free'},true)).toBe(5);
+    expect(trackedCaseLimit({tier:'premium',status:'active'},true)).toBe(Number.POSITIVE_INFINITY);
+  });
 });

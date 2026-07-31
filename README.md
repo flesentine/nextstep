@@ -7,7 +7,7 @@ An ad-free, privacy-minded Expo app that turns public immigration case updates i
 - iOS, Android, and web-compatible Expo Router shell
 - Guest-first local USCIS, NVC, and EOIR case organization
 - Protected receipt-number storage using SecureStore; SQLite stores non-secret case history
-- Milestone journey, status timeline, guidance cards, transparent estimate previews, alerts, household grouping, official tools, subscription, export, and erase flows
+- Milestone journey, status timeline, guidance cards, transparent estimate previews, alerts, household grouping, official tools, future-ready entitlement boundary, export, and erase flows
 - Responsive current/next milestone cards and a horizontally scrollable rail that keeps Biometrics readable at large text sizes
 - Local reminders, calendar export, private notes, clipboard receipt extraction, starter civics practice, and an official-source catalog
 - Privacy-safe “Cases Like Mine” explorer that suppresses cohorts below 50 observations
@@ -38,9 +38,12 @@ Without `EXPO_PUBLIC_API_BASE_URL`, USCIS additions use a safe local placeholder
 - Complete the required USCIS sandbox traffic period before requesting production access.
 - The `uscis-qualification` function records one redacted sandbox evidence row per UTC day. It exercises a known 200 staging response and a controlled official 4xx response, stores no identifiers or response bodies, and refuses to run against production URLs.
 - Replace the placeholder EAS project ID and configure Apple/Google credentials.
-- Configure `nextstep_plus_monthly` at `$2.99/month` and `nextstep_plus_annual` at `$24.99/year` with a seven-day annual trial; validate store receipts server-side before unlocking premium features.
+- Keep `EXPO_PUBLIC_PURCHASES_ENABLED=false` for the free launch. This grants unlimited access to currently working features and hides prices, trials, and purchase actions.
+- Before enabling purchases in a later release, configure `nextstep_plus_monthly` and `nextstep_plus_annual`, add a verified native billing adapter, validate entitlements server-side, and test purchase, restore, refund, grace-period, expiration, and cross-device behavior.
 - Professionally review and translate every guidance card. This repository provides educational product copy, not legal advice.
 - `poll-cases` is deployed but fail-closed. Enable it only after production USCIS access by setting `POLLING_ENABLED=true`, a strong `POLLING_SHARED_SECRET`, and the production quota. Schedule signed invocations every 15 minutes; the function itself selects cases due at four-hour or daily intervals.
+- Anonymous research sharing is explicit opt-in. Set a server-only `RESEARCH_HASH_SECRET` of at least 32 characters before enabling it. Case refreshes then contribute only keyed, month-bucketed form/milestone observations to `private.case_observations`; receipt numbers, names, exact dates, status text, user IDs, and case UUIDs are excluded.
+- `nextstep-publish-research-cohorts` runs daily in Supabase and publishes only form/milestone groups with at least 50 observations. Withdrawing consent removes that account's keyed case contributions and republishes the cohorts immediately.
 - Apply `002_public_progress.sql`. Quarterly imports must retain their source URL, publication date, and SHA-256 checksum; never silently replace a release.
 
 ## Public progress methodology
@@ -62,7 +65,7 @@ Without `EXPO_PUBLIC_API_BASE_URL`, USCIS additions use a safe local placeholder
 ## Deliberately gated
 
 - Camera OCR needs a native on-device text-recognition dependency and platform privacy validation. Clipboard extraction and user confirmation are implemented; the camera button remains an honest gated state.
-- Store purchase and restoration buttons remain disabled until App Store/Play products and server receipt verification exist.
+- Store purchasing remains absent from the free launch. The neutral billing interface, planned product IDs, and Supabase entitlement records are retained for a later reviewed release.
 - AI summaries remain off until deterministic tracking is stable and a grounded, source-citing server implementation passes legal-safety tests.
 - NVC and EOIR remain official-link journeys; no CEAC or EOIR case-page scraping is used.
 
